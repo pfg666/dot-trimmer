@@ -15,5 +15,5 @@ Things I hope to add in the future are coloring, which could be done in two ways
 1. given some sequences of inputs, color their corresponding transitions
 2. given a state, color the transitions in all possible paths to the state
 
-But we shall see if I get the time.
+But we shall see if I find the time to do this.
 
