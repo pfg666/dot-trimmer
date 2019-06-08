@@ -1,0 +1,154 @@
+package com.pfg666.dottrimmer;
+
+
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.alexmerz.graphviz.ParseException;
+import com.pfg666.dotparser.fsm.mealy.MealyDotParser;
+
+import net.automatalib.automata.transout.impl.FastMealy;
+import net.automatalib.automata.transout.impl.FastMealyState;
+import net.automatalib.automata.transout.impl.MealyTransition;
+import net.automatalib.util.graphs.dot.GraphDOT;
+import net.automatalib.words.Alphabet;
+import net.automatalib.words.impl.ListAlphabet;
+
+public class DotTrimmer {
+	// the minimum number of grouped inputs that can be merged 
+	private int mergeThreshold;
+	// the label replacing merged inputs
+	private String mergeLabel;
+	private DotTrimmerConfig config;
+
+	public DotTrimmer(int mergeThreshold, String mergeLabel) {
+		this.mergeThreshold = mergeThreshold;
+		this.mergeLabel = mergeLabel;
+	}
+	
+	public DotTrimmer(DotTrimmerConfig config) {
+		this.mergeLabel = config.getMergeLabel();
+		this.mergeThreshold = config.getMergeThreshold();
+		this.config = config;
+	} 
+	
+	public FastMealy<String, String> generateSimplifiedMachine(FastMealy<String, String> mealy) {
+		Alphabet<String> alphabet = mealy.getInputAlphabet();
+		List<String> list = new ArrayList<>(alphabet);
+		list.add(mergeLabel);
+		FastMealy<String, String> trimmed = new FastMealy<String, String>(new ListAlphabet<>(list));
+		Map<FastMealyState<String>, FastMealyState<String>> stateMap = new HashMap<>();
+		for (FastMealyState<String> state : mealy.getStates()) {
+			FastMealyState<String> newState = trimmed.addState(null);
+			stateMap.put(state, newState);
+		}
+		constructSimplifiedMachine(mealy, trimmed, stateMap);
+		return trimmed;
+	}
+
+	
+	
+	private void constructSimplifiedMachine(FastMealy<String, String> mealy, FastMealy<String, String> trimmed,
+			Map<FastMealyState<String>, FastMealyState<String>> stateMap) {
+		int inputSize = mealy.getInputAlphabet().size();
+		for (FastMealyState<String> state : mealy.getStates()) {
+			FastMealyState<String> otherState = stateMap.get(state);
+			Set<MealyTransition<FastMealyState<String>, String>> excludeTrans = new HashSet<>();
+			List<Set<String>> symbolGrouping = generateSymbolGrouping(mealy, state);
+			int maxSize = symbolGrouping.stream().mapToInt(g -> g.size()).max().getAsInt();
+			if (maxSize > mergeThreshold) {
+				Set<String> maxSet = symbolGrouping.stream().filter(g -> g.size() == maxSize).findFirst().get();
+				maxSet.stream().map(inp -> mealy.getTransition(state, inp)).forEach(tr -> excludeTrans.add(tr));
+				String input = maxSet.iterator().next();
+				MealyTransition<FastMealyState<String>, String> trans = mealy.getTransition(state, input);
+				MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
+						stateMap.get(trans.getSuccessor()), trans.getOutput());
+				otherState.setTransition(inputSize, otherTrans);
+			}
+			for (int i=0; i<inputSize; i++) {
+				MealyTransition<FastMealyState<String>, String> trans = state.getTransition(i);
+				if (!excludeTrans.contains(state.getTransition(i))) {
+					MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(stateMap.get(trans.getSuccessor()), trans.getOutput());
+					otherState.setTransition(i, otherTrans);
+				}
+ 			}
+		}
+	}
+	
+	private List<Set<String>> generateSymbolGrouping(FastMealy<String, String> a, FastMealyState<String> state) {
+		List<Set<String>> inputsWithSameBehavior = new ArrayList<>();
+		for (String sym : a.getInputAlphabet()) {
+			boolean found = false;
+			for (Set<String> inputs : inputsWithSameBehavior) {
+				String sample = inputs.iterator().next();
+				if (promptsSameBehavior(a, state, sym, sample)) {
+					inputs.add(sym);
+					found = true;
+					break;
+				}
+			}
+			
+			if (!found) {
+				LinkedHashSet<String> newSet = new LinkedHashSet<>();
+				newSet.add(sym);
+				inputsWithSameBehavior.add(newSet);
+			}
+		} 
+		
+		return inputsWithSameBehavior;
+	}
+	
+	
+	private boolean promptsSameBehavior(FastMealy<String, String> a, FastMealyState<String>  state, String symbol1, String symbol2) {
+		return isCompatible(a.getTransition(state, symbol1), a.getTransition(state, symbol2));
+	}
+	
+	
+	private boolean isCompatible(MealyTransition<FastMealyState<String>, String> tr1, MealyTransition<FastMealyState<String>, String> tr2) {
+		return tr1.getOutput().equals(tr2.getOutput()) && tr1.getSuccessor().equals(tr2.getSuccessor());
+	}
+	
+	private String getOutputFile() {
+		String trimmedModelFile;
+		if (config.getOutput() == null) {
+			trimmedModelFile = config.getModel().contains(".dot") ? 
+				config.getModel().replace(".dot", ".trimmed.dot") :
+				config.getModel().concat(".trimmed.dot");
+		} else {
+			trimmedModelFile = config.getOutput();
+		}
+		return trimmedModelFile;
+	}
+	
+	public DotTrimmerResult trimModel() throws FileNotFoundException, IOException, ParseException {
+		ReplacementGenerator gen = new ReplacementGenerator();
+		if (config.getReplacements() != null)
+			gen.loadReplacements(config.getReplacements());
+		MealyDotParser<String,String> parser = new  MealyDotParser<String,String>(new ReplacingMealyProcessor(gen.getReplacer()));
+		FastMealy<String, String> mealy = parser.parseAutomaton(config.getModel()).get(0);
+		FastMealy<String, String> trimmedMealy = generateSimplifiedMachine(mealy);
+		String trimmedModelFile = getOutputFile();
+		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(trimmedModelFile));
+		return new DotTrimmerResult(trimmedModelFile, trimmedMealy);
+	}
+	
+	public static void main(String args[]) throws ParseException, IOException {
+		ReplacementGenerator gen = new ReplacementGenerator();
+		gen.loadReplacements("replacements.json");
+		Replacer replacer = gen.getReplacer();
+		System.out.println(replacer);
+//		MealyDotParser<String,String> parser = new  MealyDotParser<String,String>(new ReplacingMealyProcessor(gen.getReplacer()));
+		
+		
+//		FastMealy<String, String> aut = parser.parseAutomaton("openssl.dot").get(0);
+//		DotTrimmer trimmer = new DotTrimmer(3, OTHER);
+	}
+}

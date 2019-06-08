@@ -1,0 +1,2 @@
+mvn install:install-file -Dfile=src/main/resources/lib/com.alexmerz.graphviz.jar -DgroupId=com.alexmerz.graphviz -DartifactId=graphviz -Dversion=1.0 -Dpackaging=jar
+mvn install:install-file -Dfile=src/main/resources/lib/dot-parser-0.1.jar -DgroupId=com.pfg666.dotparser -DartifactId=dot-parser -Dversion=1.0 -Dpackaging=jar
