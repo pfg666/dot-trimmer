@@ -11,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import com.alexmerz.graphviz.ParseException;
 import com.pfg666.dotparser.fsm.mealy.MealyDotParser;
@@ -23,12 +24,15 @@ import net.automatalib.words.Alphabet;
 import net.automatalib.words.impl.ListAlphabet;
 
 public class DotTrimmer {
+	private static Logger LOGGER = Logger.getGlobal();
+
+	
 	// the minimum number of grouped inputs that can be merged 
 	private int mergeThreshold;
 	// the label replacing merged inputs
 	private String mergeLabel;
 	private DotTrimmerConfig config;
-
+	
 	public DotTrimmer(int mergeThreshold, String mergeLabel) {
 		this.mergeThreshold = mergeThreshold;
 		this.mergeLabel = mergeLabel;
@@ -129,14 +133,23 @@ public class DotTrimmer {
 	}
 	
 	public DotTrimmerResult trimModel() throws FileNotFoundException, IOException, ParseException {
+		LOGGER.info("Starting transformation procedure");
 		ReplacementGenerator gen = new ReplacementGenerator();
-		if (config.getReplacements() != null)
+		if (config.getReplacements() != null) {
+			LOGGER.info("Loading replacements for .json");
 			gen.loadReplacements(config.getReplacements());
+		}
+		
+		LOGGER.info("Parsing automaton from file (and applying replacements)");
 		MealyDotParser<String,String> parser = new  MealyDotParser<String,String>(new ReplacingMealyProcessor(gen.getReplacer()));
 		FastMealy<String, String> mealy = parser.parseAutomaton(config.getModel()).get(0);
+		
+		LOGGER.info("Simplifying the model using the Other input construct");
 		FastMealy<String, String> trimmedMealy = generateSimplifiedMachine(mealy);
 		String trimmedModelFile = getOutputFile();
-		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(trimmedModelFile));
+		
+		LOGGER.info("Exporting the model to .dot");
+		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(trimmedModelFile), new ColoringDOTHelper<>());
 		return new DotTrimmerResult(trimmedModelFile, trimmedMealy);
 	}
 	

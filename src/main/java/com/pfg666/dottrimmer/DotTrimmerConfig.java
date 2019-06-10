@@ -24,7 +24,8 @@ public class DotTrimmerConfig {
 	@Parameter(names = {"-o","--output"}, required = false, 
 			description = "Path to the generated .dot file containing the trimmed model. ")
 	private String output = null;
-
+	
+	
 	public int getMergeThreshold() {
 		return mergeThreshold;
 	}
