@@ -1,0 +1,22 @@
+{
+	rules:[
+        {
+			replaceIf:"Alert.*",
+			replacee:"(Fatal\\,)|(Warning\\,)", 
+			replacement:""
+		},
+        
+		{
+			replaceIf:"Alert\\(Decrypt.*",
+			replacee:".*", 
+			replacement:"A\\(Dy\\)",
+			isFinal:true
+		},
+		
+		{
+			replaceIf:".*",
+			replacee:"([A-Z])[a-z]*", 
+			replacement:"$1"
+		}
+	]
+}
