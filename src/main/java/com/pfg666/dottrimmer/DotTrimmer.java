@@ -178,7 +178,7 @@ public class DotTrimmer {
 				String color = split[1].trim();
 				FastMealyState<String> state = trimmedMealy.getState(stateId);
 				Set<EdgeInfo<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>>> edges = 
-						collector.getEdgesLeadingToState(trimmedMealy, inputs, state);
+						collector.getEdgesLeadingToState(trimmedMealy, inputs, state, config.isWithoutLoops());
 				Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = 
 						edges.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
 				helpers.add(new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(transitions, color));
@@ -186,16 +186,4 @@ public class DotTrimmer {
 		}
 		return helpers;
 	}
-
-//	public static void main(String args[]) throws ParseException, IOException {
-//		ReplacementGenerator gen = new ReplacementGenerator();
-//		gen.loadReplacements("replacements.json");
-//		Replacer replacer = gen.getReplacer();
-//		System.out.println(replacer);
-////		MealyDotParser<String,String> parser = new  MealyDotParser<String,String>(new ReplacingMealyProcessor(gen.getReplacer()));
-//		
-//		
-////		FastMealy<String, String> aut = parser.parseAutomaton("openssl.dot").get(0);
-////		DotTrimmer trimmer = new DotTrimmer(3, OTHER);
-//	}
 }

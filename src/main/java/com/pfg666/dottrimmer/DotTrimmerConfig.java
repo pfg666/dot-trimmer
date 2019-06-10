@@ -24,8 +24,13 @@ public class DotTrimmerConfig {
 	private String model;
 	
 	@Parameter(names = {"-sc","--stateColor"}, required = false, 
-			description = "A list of <stateid>:<color> elements, edges leading to the state with the corresponding id will be colored using the given color")
+			description = "A list of <stateid>:<color> elements. Edges of all paths leading to the state with the corresponding id are colored using the given color")
 	private List<String> coloredStates;
+	
+	private String color="green";
+	
+	@Parameter(names = {"-wl","--withoutLoops"}, required = false, description = "If set to true, state-coloring will ignore paths with loops")
+	private boolean withoutLoops;
 	
 	@Parameter(names = {"-o","--output"}, required = false, 
 			description = "Path to the generated .dot file containing the trimmed model. ")
@@ -43,6 +48,10 @@ public class DotTrimmerConfig {
 	public String getReplacements() {
 		return replacements;
 	}
+	
+	public boolean isWithoutLoops() {
+		return withoutLoops;
+	}
 
 	public String getModel() {
 		return model;
@@ -50,6 +59,10 @@ public class DotTrimmerConfig {
 	
 	public String getOutput() {
 		return output;
+	}
+	
+	public String getColor() {
+		return color;
 	}
 	
 	public List<String> getColoredStates() {
