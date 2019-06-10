@@ -8,17 +8,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import com.alexmerz.graphviz.ParseException;
 import com.pfg666.dotparser.fsm.mealy.MealyDotParser;
 
+import net.automatalib.automata.graphs.TransitionEdge;
 import net.automatalib.automata.transout.impl.FastMealy;
 import net.automatalib.automata.transout.impl.FastMealyState;
 import net.automatalib.automata.transout.impl.MealyTransition;
+import net.automatalib.graphs.dot.AggregateDOTHelper;
+import net.automatalib.graphs.dot.GraphDOTHelper;
 import net.automatalib.util.graphs.dot.GraphDOT;
 import net.automatalib.words.Alphabet;
 import net.automatalib.words.impl.ListAlphabet;
@@ -63,6 +68,7 @@ public class DotTrimmer {
 	private void constructSimplifiedMachine(FastMealy<String, String> mealy, FastMealy<String, String> trimmed,
 			Map<FastMealyState<String>, FastMealyState<String>> stateMap) {
 		int inputSize = mealy.getInputAlphabet().size();
+		trimmed.setInitialState(stateMap.get(mealy.getInitialState()));
 		for (FastMealyState<String> state : mealy.getStates()) {
 			FastMealyState<String> otherState = stateMap.get(state);
 			Set<MealyTransition<FastMealyState<String>, String>> excludeTrans = new HashSet<>();
@@ -148,20 +154,48 @@ public class DotTrimmer {
 		FastMealy<String, String> trimmedMealy = generateSimplifiedMachine(mealy);
 		String trimmedModelFile = getOutputFile();
 		
+		List<GraphDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>>
+		helpers = generateHelpers(trimmedMealy);
+		
+		AggregateDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> helper = new AggregateDOTHelper<>();
+		helpers.forEach(h -> helper.add(h));
+		
 		LOGGER.info("Exporting the model to .dot");
-		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(trimmedModelFile), new ColoringDOTHelper<>());
+		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(trimmedModelFile), helper);
 		return new DotTrimmerResult(trimmedModelFile, trimmedMealy);
 	}
 	
-	public static void main(String args[]) throws ParseException, IOException {
-		ReplacementGenerator gen = new ReplacementGenerator();
-		gen.loadReplacements("replacements.json");
-		Replacer replacer = gen.getReplacer();
-		System.out.println(replacer);
-//		MealyDotParser<String,String> parser = new  MealyDotParser<String,String>(new ReplacingMealyProcessor(gen.getReplacer()));
-		
-		
-//		FastMealy<String, String> aut = parser.parseAutomaton("openssl.dot").get(0);
-//		DotTrimmer trimmer = new DotTrimmer(3, OTHER);
+	// generics bonanza
+	private List<GraphDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> generateHelpers(
+			FastMealy<String, String> trimmedMealy) {
+		Alphabet<String> inputs = trimmedMealy.getInputAlphabet();
+		List<GraphDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> helpers = new LinkedList<>();
+		EdgeCollector<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>> collector = new EdgeCollector<>();
+		if (config.getColoredStates() != null) {
+			for (String coloredState : config.getColoredStates()) {
+				String[] split = coloredState.split("\\:");
+				Integer stateId = Integer.valueOf(split[0]);
+				String color = split[1].trim();
+				FastMealyState<String> state = trimmedMealy.getState(stateId);
+				Set<EdgeInfo<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>>> edges = 
+						collector.getEdgesLeadingToState(trimmedMealy, inputs, state);
+				Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = 
+						edges.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
+				helpers.add(new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(transitions, color));
+			}
+		}
+		return helpers;
 	}
+
+//	public static void main(String args[]) throws ParseException, IOException {
+//		ReplacementGenerator gen = new ReplacementGenerator();
+//		gen.loadReplacements("replacements.json");
+//		Replacer replacer = gen.getReplacer();
+//		System.out.println(replacer);
+////		MealyDotParser<String,String> parser = new  MealyDotParser<String,String>(new ReplacingMealyProcessor(gen.getReplacer()));
+//		
+//		
+////		FastMealy<String, String> aut = parser.parseAutomaton("openssl.dot").get(0);
+////		DotTrimmer trimmer = new DotTrimmer(3, OTHER);
+//	}
 }

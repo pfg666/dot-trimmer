@@ -1,5 +1,7 @@
 package com.pfg666.dottrimmer;
 
+import java.util.List;
+
 import com.beust.jcommander.Parameter;
 
 public class DotTrimmerConfig {
@@ -20,6 +22,10 @@ public class DotTrimmerConfig {
 	@Parameter(names = {"-i","--input"}, required = true, 
 			description = "Path to the input .dot file containing the model to be simplified. ")
 	private String model;
+	
+	@Parameter(names = {"-sc","--stateColor"}, required = false, 
+			description = "A list of <stateid>:<color> elements, edges leading to the state with the corresponding id will be colored using the given color")
+	private List<String> coloredStates;
 	
 	@Parameter(names = {"-o","--output"}, required = false, 
 			description = "Path to the generated .dot file containing the trimmed model. ")
@@ -44,5 +50,9 @@ public class DotTrimmerConfig {
 	
 	public String getOutput() {
 		return output;
+	}
+	
+	public List<String> getColoredStates() {
+		return coloredStates;
 	}
 }
