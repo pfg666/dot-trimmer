@@ -2,6 +2,7 @@ package com.pfg666.dottrimmer;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -20,7 +21,7 @@ public class EdgeCollector<S, I, T>  {
 	public Set<EdgeInfo<S,I,T>> getEdgesLeadingToState(UniversalDeterministicAutomaton<S, I, T, ?, ?> automaton, Collection<? extends I> inputs, S toState, boolean excludeLoops) {
 		Queue<Word<EdgeInfo<S,I,T>>> bfsQueue = new ArrayDeque<>();
 		Set<EdgeInfo<S,I,T>> leadingEdges = new LinkedHashSet<>();
-		Set<Set<EdgeInfo<S,I,T>>> visited = new HashSet<>();
+		Set<Object> visited = new HashSet<>();
 		Map<S, Set<EdgeInfo<S,I,T>>> predMap = getPrecedingEdgesMap(automaton, inputs);
 		bfsQueue.addAll(predMap.get(toState).stream().map(e -> Word.fromSymbols(e)).collect(Collectors.toSet()));
 		Word<EdgeInfo<S,I,T>> curr;
@@ -30,7 +31,7 @@ public class EdgeCollector<S, I, T>  {
 				continue;
 			}
 			EdgeInfo<S, I, T> currEdge = curr.getSymbol(0);
-			HashSet<EdgeInfo<S, I, T>> configuration = new HashSet<>(curr.asList());
+			Object configuration = extractConfiguration(curr);
 			if (visited.contains(configuration)) {
 				continue;
 			}
@@ -48,8 +49,15 @@ public class EdgeCollector<S, I, T>  {
 		}
 		
 		return leadingEdges;
-		
-	} 
+	}
+	
+	/*
+	 * Extracts a more compact configuration which uniquely characterizes a path. 
+	 */
+	private Object extractConfiguration(Word<EdgeInfo<S,I,T>> path) {
+//		return path.stream().map(e -> e.getInput().hashCode()).mapToLong(i -> i).sum();
+		return path.stream().map(e -> e.getInput()).collect(Collectors.toList());
+	}
 	
 	private boolean hasLoop(Word<EdgeInfo<S,I,T>> path, S toState) {
 		long distCount = Stream.concat(path.stream().map(e -> e.getSource()), Stream.of(toState)).distinct().count();
@@ -68,6 +76,24 @@ public class EdgeCollector<S, I, T>  {
 			}
 		}
 		return map;
+	}
+	
+	public Set<EdgeInfo<S,I,T>> getEdgesForPath(UniversalDeterministicAutomaton<S, I, T, ?, ?> automaton, Collection<? extends I> inputs, Word<I> path) {
+		if (!inputs.containsAll(path.asList())) {
+			return Collections.emptySet();
+		} 
+		LinkedHashSet<EdgeInfo<S,I,T>> edges = new LinkedHashSet<>();
+		S cur = automaton.getInitialState();
+		for (I input : path) {
+			S succ = automaton.getSuccessor(cur, input);
+			T trans = automaton.getTransition(cur, input);
+			if (succ == null || trans == null) {
+				return Collections.emptySet();
+			}
+			edges.add(new EdgeInfo<>(succ, input, trans));
+			cur = succ;
+		}
+		return edges;
 	}
 	
 

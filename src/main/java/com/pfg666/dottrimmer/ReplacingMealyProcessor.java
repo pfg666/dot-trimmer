@@ -12,11 +12,13 @@ public class ReplacingMealyProcessor implements MealyProcessor<String, String>{
 
 	@Override
 	public String processInput(String input) {
+		input = input.trim();
 		return replacer.replace(input);
 	}
 
 	@Override
 	public String processOutput(String output) {
+		output = output.trim();
 		return replacer.replace(output);
 	}
 	

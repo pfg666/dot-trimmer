@@ -26,6 +26,7 @@ import net.automatalib.graphs.dot.AggregateDOTHelper;
 import net.automatalib.graphs.dot.GraphDOTHelper;
 import net.automatalib.util.graphs.dot.GraphDOT;
 import net.automatalib.words.Alphabet;
+import net.automatalib.words.Word;
 import net.automatalib.words.impl.ListAlphabet;
 
 public class DotTrimmer {
@@ -155,7 +156,7 @@ public class DotTrimmer {
 		String trimmedModelFile = getOutputFile();
 		
 		List<GraphDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>>
-		helpers = generateHelpers(trimmedMealy);
+		helpers = generateHelpers(trimmedMealy, gen.getReplacer());
 		
 		AggregateDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> helper = new AggregateDOTHelper<>();
 		helpers.forEach(h -> helper.add(h));
@@ -167,7 +168,7 @@ public class DotTrimmer {
 	
 	// generics bonanza
 	private List<GraphDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> generateHelpers(
-			FastMealy<String, String> trimmedMealy) {
+			FastMealy<String, String> trimmedMealy, Replacer replacer) {
 		Alphabet<String> inputs = trimmedMealy.getInputAlphabet();
 		List<GraphDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> helpers = new LinkedList<>();
 		EdgeCollector<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>> collector = new EdgeCollector<>();
@@ -184,6 +185,20 @@ public class DotTrimmer {
 				helpers.add(new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(transitions, color));
 			}
 		}
+		
+		if (config.getColoredPathsFile() != null) {
+			ColoredPath [] paths = ColoredPath.loadColoredPaths(config.getColoredPathsFile());
+			for (ColoredPath path : paths) {
+				List<String> realPath = path.getPath().stream().map(i -> replacer.replace(i)).collect(Collectors.toList());
+				Set<EdgeInfo<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>>> edges = collector.getEdgesForPath(trimmedMealy, inputs, Word.fromList(realPath));
+				if (!edges.isEmpty()) {
+					Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = 
+							edges.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
+					helpers.add(new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(transitions, path.getColor()));
+				}
+			}
+		}
+		
 		return helpers;
 	}
 }
