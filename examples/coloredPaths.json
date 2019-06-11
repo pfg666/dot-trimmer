@@ -1,0 +1,18 @@
+[
+  {
+    "color": "green",
+    "path": [ "RsaClientHello", "RsaClientHello", "EmptyCertificate", "RsaClientKeyExchange", "ChangeCipherSpec", "Finished" ]
+  },
+  {
+    "color": "green",
+    "path": [ "RsaClientHello", "RsaClientHello", "RsaClientKeyExchange", "ChangeCipherSpec", "Finished" ]
+  },
+  {
+    "color": "green",
+    "path": [ "RsaClientHello", "RsaClientHello", "Certificate", "RsaClientKeyExchange", "CertificateVerify", "ChangeCipherSpec", "Finished" ]
+  },
+  {
+    "color": "green",
+    "path": [ "PskClientHello", "PskClientHello", "PskClientKeyExchange", "ChangeCipherSpec", "Finished" ]
+  }
+]
