@@ -155,6 +155,7 @@ public class DotTrimmer {
 		FastMealy<String, String> trimmedMealy = generateSimplifiedMachine(mealy);
 		String trimmedModelFile = getOutputFile();
 		
+		LOGGER.info("Applying coloring");
 		List<GraphDOTHelper<FastMealyState<String>,TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>>
 		helpers = generateHelpers(trimmedMealy, gen.getReplacer());
 		
@@ -179,7 +180,9 @@ public class DotTrimmer {
 				String color = split[1].trim();
 				FastMealyState<String> state = trimmedMealy.getState(stateId);
 				Set<EdgeInfo<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>>> edges = 
-						collector.getEdgesLeadingToState(trimmedMealy, inputs, state, config.isWithoutLoops());
+						collector.getEdgesLeadingToState(trimmedMealy, inputs, state, config.getMaxLength(), config.isWithoutLoops());
+				System.out.println("Returned edges: " + edges.size());
+				System.out.println(edges);
 				Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = 
 						edges.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
 				helpers.add(new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(transitions, color));

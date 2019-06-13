@@ -27,8 +27,11 @@ public class DotTrimmerConfig {
 			description = "A list of <stateid>:<color> elements. Edges of all paths leading to the state with the corresponding id are colored using the given color")
 	private List<String> coloredStates;
 	
-	@Parameter(names = {"-wl","--withoutLoops"}, required = false, description = "If set to true, state-coloring will ignore paths with loops")
+	@Parameter(names = {"-wl","--withoutLoops"}, required = false, description = "If set to true, state-coloring will ignore paths with self-loops")
 	private boolean withoutLoops;
+	
+	@Parameter(names = {"-ml","--maxLength"}, required = false, description = "The maximum path length to search for")
+	private Integer maxLength = 11;
 	
 	@Parameter(names = {"-pc","--pathColor"}, required = false, description = "Colors the paths as described in a .json")
 	private String coloredPathsFile;
@@ -69,4 +72,9 @@ public class DotTrimmerConfig {
 	public String getColoredPathsFile() {
 		return coloredPathsFile;
 	}
+
+	public Integer getMaxLength() {
+		return maxLength;
+	}
+
 }

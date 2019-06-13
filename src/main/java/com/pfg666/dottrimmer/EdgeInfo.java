@@ -48,7 +48,7 @@ public class EdgeInfo<S,I,T>  {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		EdgeInfo other = (EdgeInfo) obj;
+		EdgeInfo<?,?,?> other = (EdgeInfo<?,?,?>) obj;
 		if (input == null) {
 			if (other.input != null)
 				return false;
@@ -66,5 +66,9 @@ public class EdgeInfo<S,I,T>  {
 			return false;
 		return true;
 	}
-
+	
+	public String toString()
+	{
+		return String.format("Edge[source=%s;input=%s;trans=%s]", source.toString(), input.toString(), transition.toString());
+	}
 }

@@ -1,7 +1,6 @@
 package com.pfg666.dottrimmer;
 
 import java.io.FileReader;
-import java.util.Arrays;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -43,13 +42,5 @@ public class ColoredPath {
 	
 	public String toString() {
 		return color + ":" + path.toString();
-	}
-	
-	public static void main(String args[]) {
-		Gson gson = new Gson();
-		Integer [] elements = gson.fromJson("[1, 2, 3]", Integer [].class);
-		ColoredPath [] paths = gson.fromJson("[{color:green,path:[aab,aaa]}]", ColoredPath [].class);
-		paths = ColoredPath.loadColoredPaths("examples\\coloredPaths.json");
-		System.out.println(Arrays.toString(paths));
 	}
 }

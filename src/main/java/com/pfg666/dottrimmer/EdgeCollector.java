@@ -18,7 +18,11 @@ import net.automatalib.words.Word;
 
 public class EdgeCollector<S, I, T>  {
 	
-	public Set<EdgeInfo<S,I,T>> getEdgesLeadingToState(UniversalDeterministicAutomaton<S, I, T, ?, ?> automaton, Collection<? extends I> inputs, S toState, boolean excludeLoops) {
+	//TODO The algorithm has to be improved, as it currently relies solely on maxPath to determine which paths to choose.
+	
+	public Set<EdgeInfo<S,I,T>> getEdgesLeadingToState(UniversalDeterministicAutomaton<S, I, T, ?, ?> automaton, Collection<? extends I> inputs, S toState, 
+			int maxPath,
+			boolean excludeLoops) {
 		Queue<Word<EdgeInfo<S,I,T>>> bfsQueue = new ArrayDeque<>();
 		Set<EdgeInfo<S,I,T>> leadingEdges = new LinkedHashSet<>();
 		Set<Object> visited = new HashSet<>();
@@ -27,23 +31,23 @@ public class EdgeCollector<S, I, T>  {
 		Word<EdgeInfo<S,I,T>> curr;
 
 		while ((curr = bfsQueue.poll()) != null) {
-			if (excludeLoops && hasLoop(curr, toState)) {
+			if (excludeLoops && hasSelfLoop(curr, toState)) {
 				continue;
 			}
 			EdgeInfo<S, I, T> currEdge = curr.getSymbol(0);
-			Object configuration = extractConfiguration(curr);
-			if (visited.contains(configuration)) {
-				continue;
-			}
-			visited.add(configuration);
 			S source = currEdge.getSource();
-			if (Objects.equals(automaton.getInitialState(), source)) 
+			if (Objects.equals(automaton.getInitialState(), source))  {
 				leadingEdges.addAll(curr.asList());
+			}
 			
 			Set<EdgeInfo<S, I, T>> predEdges = predMap.get(source);
 			if (predEdges != null) {
 				for (EdgeInfo<S, I, T> edge : predEdges) {
-					bfsQueue.add(curr.prepend(edge));
+					Word<EdgeInfo<S, I, T>> path = curr.prepend(edge);
+					Object configuration = extractConfiguration(path);
+					if (!visited.contains(configuration) && path.size() < maxPath) {
+						bfsQueue.add(path);
+					}
 				}
 			}
 		}
@@ -55,13 +59,27 @@ public class EdgeCollector<S, I, T>  {
 	 * Extracts a more compact configuration which uniquely characterizes a path. 
 	 */
 	private Object extractConfiguration(Word<EdgeInfo<S,I,T>> path) {
-//		return path.stream().map(e -> e.getInput().hashCode()).mapToLong(i -> i).sum();
-		return path.stream().map(e -> e.getInput()).collect(Collectors.toList());
+		return path.stream().collect(Collectors.toList());
 	}
 	
 	private boolean hasLoop(Word<EdgeInfo<S,I,T>> path, S toState) {
 		long distCount = Stream.concat(path.stream().map(e -> e.getSource()), Stream.of(toState)).distinct().count();
 		return !(distCount == (long) path.length() + 1);
+	}
+	
+	private boolean hasSelfLoop(Word<EdgeInfo<S,I,T>> path, S toState) {
+		if (path.isEmpty()) {
+			return false;
+		} else {
+			EdgeInfo<S, I, T> prev = path.firstSymbol();
+			for (int i=1; i<path.size(); i++) {
+				EdgeInfo<S, I, T> curr = path.getSymbol(i);
+				if (prev.getSource().equals(curr.getSource())) 
+					return true;
+				prev = curr;
+			}
+		}
+		return false;
 	}
 	
 	private Map<S, Set<EdgeInfo<S,I,T>>> getPrecedingEdgesMap(UniversalDeterministicAutomaton<S, I, T, ?, ?> automaton, Collection<? extends I> inputs) {
