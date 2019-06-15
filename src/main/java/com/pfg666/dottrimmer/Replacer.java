@@ -16,7 +16,7 @@ public class Replacer {
 	public String replace(String string) {
 		String result = string;
 		for (ReplacementRule rule : rules) {
-			if (rule.isApplicable(string)) {
+			if (rule.isApplicable(result)) {
 				result =  rule.apply(result);
 				if (rule.isFinal()) {
 					return result;
