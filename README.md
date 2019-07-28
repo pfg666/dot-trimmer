@@ -18,7 +18,7 @@ Also added is support for coloring transitions of a .dot model:
 Things I hope to add in the future are coloring, which could be done in two ways:
 1. better algorithm for state-based coloring, ability to choose two states between which all transitions are colored
 2. being able to configure which trimming/coloring options to apply
-3. ...
+3. a more generic framework for applying transformations. These might be performing string replacements, merging transitions, coloring states ...
 
 But we shall see if I find the time to do this.
 
