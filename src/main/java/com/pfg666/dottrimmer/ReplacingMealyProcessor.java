@@ -1,6 +1,7 @@
 package com.pfg666.dottrimmer;
 
 import com.pfg666.dotparser.fsm.mealy.MealyProcessor;
+import com.pfg666.dottrimmer.replacements.Replacer;
 
 public class ReplacingMealyProcessor implements MealyProcessor<String, String>{
 	

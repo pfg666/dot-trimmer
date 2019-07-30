@@ -1,4 +1,4 @@
-package com.pfg666.dottrimmer;
+package com.pfg666.dottrimmer.paths;
 
 import java.io.FileReader;
 import java.util.Collections;
@@ -28,7 +28,9 @@ public class ColoredPath {
 	private String color;
 	private List<String> path;
 	private List<String> prefix;
-	
+	private List<String> outputs;
+	private String anyOutput;
+	private boolean free = false;
 	
 	public ColoredPath() {
 	}
@@ -61,6 +63,18 @@ public class ColoredPath {
 			return DEFAULT_PREFIX;
 		else 
 			return Collections.unmodifiableList(prefix);
+	}
+	
+	public List<String> getOutputs() {
+		return outputs;
+	}
+	
+	public String getAnyOutput() {
+		return anyOutput;
+	}
+	
+	public boolean isFree() {
+		return free;
 	}
 	
 	public String toString() {

@@ -1,4 +1,4 @@
-package com.pfg666.dottrimmer;
+package com.pfg666.dottrimmer.replacements;
 
 import java.util.Arrays;
 

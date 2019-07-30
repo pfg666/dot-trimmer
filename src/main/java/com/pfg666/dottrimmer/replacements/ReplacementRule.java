@@ -1,4 +1,4 @@
-package com.pfg666.dottrimmer;
+package com.pfg666.dottrimmer.replacements;
 
 public class ReplacementRule {
 	private String replaceIf;
@@ -26,7 +26,7 @@ public class ReplacementRule {
 		if (function == null) {
 			return input.replaceAll(replacee, replacement);
 		} else {
-			return function.applyReplacementFunction(replacee);
+			return function.applyReplacementFunction(input);
 		}
 	}
 	

@@ -1,4 +1,4 @@
-package com.pfg666.dottrimmer;
+package com.pfg666.dottrimmer.paths;
 
 import java.util.HashSet;
 import java.util.Map;

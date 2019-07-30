@@ -96,23 +96,23 @@ public class EdgeCollector<S, I, T>  {
 		return map;
 	}
 	
-	public Set<EdgeInfo<S,I,T>> getEdgesForPath(UniversalDeterministicAutomaton<S, I, T, ?, ?> automaton, Collection<? extends I> inputs, Word<I> prefix, Word<I> path) {
+	public Set<EdgeInfo<S,I,T>> getEdgesForPath(UniversalDeterministicAutomaton<S, I, T, ?, ?> automaton, Collection<? extends I> inputs, Word<I> path, Set<S> states) {
 		if (!inputs.containsAll(path.asList())) {
 			return Collections.emptySet();
 		} 
 		LinkedHashSet<EdgeInfo<S,I,T>> edges = new LinkedHashSet<>();
-		S cur = automaton.getSuccessor(automaton.getInitialState(), prefix);
-		for (I input : path) {
-			S succ = automaton.getSuccessor(cur, input);
-			T trans = automaton.getTransition(cur, input);
-			if (succ == null || trans == null) {
-				return Collections.emptySet();
+		for (S cur : states) {
+			for (I input : path) {
+				S succ = automaton.getSuccessor(cur, input);
+				T trans = automaton.getTransition(cur, input);
+				if (succ == null || trans == null) {
+					return Collections.emptySet();
+				}
+				edges.add(new EdgeInfo<>(succ, input, trans));
+				cur = succ;
 			}
-			edges.add(new EdgeInfo<>(succ, input, trans));
-			cur = succ;
 		}
 		return edges;
 	}
 	
-
 }

@@ -16,6 +16,12 @@ import java.util.stream.Collectors;
 
 import com.alexmerz.graphviz.ParseException;
 import com.pfg666.dotparser.fsm.mealy.MealyDotParser;
+import com.pfg666.dottrimmer.paths.ColoredPath;
+import com.pfg666.dottrimmer.paths.ColoringDOTHelper;
+import com.pfg666.dottrimmer.paths.ParsedColoredPath;
+import com.pfg666.dottrimmer.paths.StateSelector;
+import com.pfg666.dottrimmer.replacements.ReplacementGenerator;
+import com.pfg666.dottrimmer.replacements.Replacer;
 
 import net.automatalib.automata.graphs.TransitionEdge;
 import net.automatalib.automata.transout.impl.FastMealy;
@@ -190,15 +196,14 @@ public class DotTrimmer {
 		}
 
 		if (config.getColoredPathsFile() != null) {
+			StateSelector<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>, String> stateSelector = new StateSelector<>();
 			ColoredPath[] paths = ColoredPath.loadColoredPaths(config.getColoredPathsFile());
 			for (ColoredPath path : paths) {
-				List<String> realPath = path.getPath().stream().map(i -> replacer.replace(i))
-						.collect(Collectors.toList());
-				List<String> realPrefix = path.getPrefix().stream().map(i -> replacer.replace(i))
-						.collect(Collectors.toList());
+				ParsedColoredPath<String> parsedColorPath = parseColorPath(path, replacer, trimmedMealy);
+				Set<FastMealyState<String>> states = stateSelector.selectStates(trimmedMealy, parsedColorPath);
 				
 				Set<EdgeInfo<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>>> edges = collector
-						.getEdgesForPath(trimmedMealy, inputs, Word.fromList(realPrefix), Word.fromList(realPath));
+						.getEdgesForPath(trimmedMealy, inputs, parsedColorPath.getPathWord(), states);
 				if (!edges.isEmpty()) {
 					Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = edges
 							.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
@@ -210,5 +215,11 @@ public class DotTrimmer {
 		}
 
 		return helpers;
+	}
+	
+	private ParsedColoredPath<String> parseColorPath(ColoredPath path, Replacer replacer, FastMealy<String, String> trimmedMealy) {
+		List<String> realPath = path.getPath().stream().collect(Collectors.toList());
+		List<String> realPrefix = path.getPrefix().stream().collect(Collectors.toList());
+		return new ParsedColoredPath<>(path, Word.fromList(realPrefix), Word.fromList(realPath));
 	}
 }
