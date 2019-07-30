@@ -5,6 +5,7 @@ public class ReplacementRule {
 	private String replacee;
 	private String replacement;
 	private boolean isFinal;
+	private SpecialReplacementFunction spFunction;
 	
 	public ReplacementRule() {
 		isFinal = false;
@@ -22,7 +23,11 @@ public class ReplacementRule {
 	}
 	
 	public String apply(String input) {
-		return input.replaceAll(replacee, replacement);
+		if (spFunction == null) {
+			return input.replaceAll(replacee, replacement);
+		} else {
+			return spFunction.applyReplacementFunction(replacee);
+		}
 	}
 	
 	public boolean isFinal() {
@@ -34,6 +39,5 @@ public class ReplacementRule {
 		return String.format("ReplacementRule [replaceIf=%s, replacee=%s, replacement=%s, isFinal=%s]", replaceIf,
 				replacee, replacement, isFinal);
 	}
-	
 	
 }
