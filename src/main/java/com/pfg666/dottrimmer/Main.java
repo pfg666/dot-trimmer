@@ -26,7 +26,6 @@ public class Main {
             } catch (Exception E) {
                 LOGGER.severe("Encountered an exception. See debug for more info.");
                 E.printStackTrace();
-                //TODO ^^ what says here :)
                 LOGGER.severe(E.getMessage());
             }
         } catch (ParameterException E) {
