@@ -4,9 +4,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import net.automatalib.graphs.dot.EmptyDOTHelper;
+import net.automatalib.visualization.DefaultVisualizationHelper;
 
-public class ColoringDOTHelper<N, E> extends EmptyDOTHelper<N, E> {
+
+public class ColoringDOTHelper<N, E> extends DefaultVisualizationHelper<N, E> {
 	private Set<E> edges;
 	private String color;
 	

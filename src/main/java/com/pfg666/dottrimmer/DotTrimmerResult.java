@@ -1,6 +1,6 @@
 package com.pfg666.dottrimmer;
 
-import net.automatalib.automata.transout.impl.FastMealy;
+import net.automatalib.automata.transducers.impl.FastMealy;
 
 public class DotTrimmerResult {
 	private String modelFile;

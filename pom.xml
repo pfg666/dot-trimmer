@@ -7,7 +7,7 @@
 
 	<groupId>com.pfg666.dottrimmer</groupId>
 	<artifactId>dot-trimmer</artifactId>
-	<version>0.1</version>
+	<version>0.2</version>
 
 	<name>dot-trimmer</name>
 	<url>https://github.com/pfg666/dot-trimmer</url>
@@ -28,13 +28,24 @@
 		<dependency>
 			<groupId>net.automatalib</groupId>
 			<artifactId>automata-core</artifactId>
-			<version>0.6.0</version>
+			<version>0.8.0</version>
 		</dependency>
 		<dependency>
 			<groupId>net.automatalib</groupId>
 			<artifactId>automata-util</artifactId>
-			<version>0.6.0</version>
+			<version>0.8.0</version>
 		</dependency>
+		<dependency>
+        <groupId>net.automatalib</groupId>
+        <artifactId>automata-serialization-parent</artifactId>
+        <version>0.8.0</version>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>net.automatalib</groupId>
+        <artifactId>automata-serialization-dot</artifactId>
+        <version>0.8.0</version>
+      </dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
@@ -56,7 +67,7 @@
 		<dependency>
 			<groupId>com.pfg666.dotparser</groupId>
 			<artifactId>dot-parser</artifactId>
-			<version>0.1</version>
+			<version>0.2</version>
 		</dependency>
 	</dependencies>
 

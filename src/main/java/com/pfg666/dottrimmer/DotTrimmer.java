@@ -25,12 +25,12 @@ import com.pfg666.dottrimmer.replacements.ReplacementGenerator;
 import com.pfg666.dottrimmer.replacements.Replacer;
 
 import net.automatalib.automata.graphs.TransitionEdge;
-import net.automatalib.automata.transout.impl.FastMealy;
-import net.automatalib.automata.transout.impl.FastMealyState;
-import net.automatalib.automata.transout.impl.MealyTransition;
-import net.automatalib.graphs.dot.AggregateDOTHelper;
-import net.automatalib.graphs.dot.GraphDOTHelper;
-import net.automatalib.util.graphs.dot.GraphDOT;
+import net.automatalib.automata.transducers.impl.FastMealy;
+import net.automatalib.automata.transducers.impl.FastMealyState;
+import net.automatalib.automata.transducers.impl.MealyTransition;
+import net.automatalib.serialization.dot.GraphDOT;
+import net.automatalib.visualization.VisualizationHelper;
+import net.automatalib.visualization.helper.AggregateVisualizationHelper;
 import net.automatalib.words.Alphabet;
 import net.automatalib.words.Word;
 import net.automatalib.words.impl.ListAlphabet;
@@ -82,10 +82,10 @@ public class DotTrimmer {
 		for (FastMealyState<String> state : mealy.getStates()) {
 			FastMealyState<String> otherState = stateMap.get(state);
 			for (int i = 0; i < mealy.getInputAlphabet().size(); i++) {
-				MealyTransition<FastMealyState<String>, String> trans = state.getTransition(i);
+				MealyTransition<FastMealyState<String>, String> trans = state.getTransitionObject(i);
 				MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
 							stateMap.get(trans.getSuccessor()), trans.getOutput());
-				otherState.setTransition(i, otherTrans);
+				otherState.setTransitionObject(i, otherTrans);
 			}
 		}
 		return copy;
@@ -107,14 +107,14 @@ public class DotTrimmer {
 				MealyTransition<FastMealyState<String>, String> trans = mealy.getTransition(state, input);
 				MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
 						stateMap.get(trans.getSuccessor()), trans.getOutput());
-				otherState.setTransition(inputSize, otherTrans);
+				otherState.setTransitionObject(inputSize, otherTrans);
 			}
 			for (int i = 0; i < inputSize; i++) {
-				MealyTransition<FastMealyState<String>, String> trans = state.getTransition(i);
-				if (trans != null && !excludeTrans.contains(state.getTransition(i))) {
+				MealyTransition<FastMealyState<String>, String> trans = state.getTransitionObject(i);
+				if (trans != null && !excludeTrans.contains(state.getTransitionObject(i))) {
 					MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
 							stateMap.get(trans.getSuccessor()), trans.getOutput());
-					otherState.setTransition(i, otherTrans);
+					otherState.setTransitionObject(i, otherTrans);
 				}
 			}
 		}
@@ -192,11 +192,10 @@ public class DotTrimmer {
 		String trimmedModelFile = getOutputFile();
 
 		LOGGER.info("Applying coloring");
-		List<GraphDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> helpers = generateHelpers(
+		List<VisualizationHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> helpers = generateHelpers(
 				trimmedMealy, gen.getReplacer());
 
-		AggregateDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> helper = new AggregateDOTHelper<>();
-		helpers.forEach(h -> helper.add(h));
+		AggregateVisualizationHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> helper = new AggregateVisualizationHelper<>(helpers);
 
 		LOGGER.info("Exporting the model to .dot");
 		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(trimmedModelFile), helper);
@@ -218,10 +217,10 @@ public class DotTrimmer {
 	}
 
 	// generics bonanza
-	private List<GraphDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> generateHelpers(
+	private List<VisualizationHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> generateHelpers(
 			FastMealy<String, String> trimmedMealy, Replacer replacer) {
 		Alphabet<String> inputs = trimmedMealy.getInputAlphabet();
-		List<GraphDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> helpers = new LinkedList<>();
+		List<VisualizationHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> helpers = new LinkedList<>();
 		EdgeCollector<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>> collector = new EdgeCollector<>();
 		if (config.getColoredStates() != null) {
 			for (String coloredState : config.getColoredStates()) {
