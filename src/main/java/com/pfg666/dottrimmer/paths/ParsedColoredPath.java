@@ -20,7 +20,7 @@ public class ParsedColoredPath<I>{
 	
 	public Word<I> getPathWord() {
 		return pathWord;
-	}
+	}	
 	public Word<I> getPrefixWord() {
 		return prefixWord;
 	}

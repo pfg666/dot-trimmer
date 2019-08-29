@@ -35,7 +35,7 @@ public class StateSelector<S, I, T, O> {
 					+ "expected to be the same as the number of output matches. \n Parsed color path: " + path);
 		} else {
 			for (S state : states) {
-				Word<O> pathOutput = automaton.computeOutput(path.getPathWord());
+				Word<O> pathOutput = automaton.computeStateOutput(state, path.getPathWord());
 				boolean matches = true;
 				for (int i=0; i<path.getColoredPath().getOutputs().size(); i++) {
 					O autOutput = pathOutput.getSymbol(i);
@@ -58,7 +58,7 @@ public class StateSelector<S, I, T, O> {
 			ParsedColoredPath<I> path) {
 		Set<S> outputFilteredStates = new LinkedHashSet<>();
 		for (S state : states) {
-			Word<O> pathOutput = automaton.computeOutput(path.getPathWord());
+			Word<O> pathOutput = automaton.computeStateOutput(state, path.getPathWord());
 			boolean matches = pathOutput.stream().anyMatch(po -> po.toString().matches(path.getColoredPath().getAnyOutput()));
 			if (matches) {
 				outputFilteredStates.add(state);

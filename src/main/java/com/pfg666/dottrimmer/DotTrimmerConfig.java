@@ -33,6 +33,9 @@ public class DotTrimmerConfig {
 	@Parameter(names = {"-ml","--maxLength"}, required = false, description = "The maximum path length to search for")
 	private Integer maxLength = 11;
 	
+	@Parameter(names = {"-ego","--endGoalOutput"}, required = false, description = "Only keep states necessary to capture behavior leading up to an endgoal output. A matching regex for the output is provided.")
+	private String endGoalOutput = null;
+	
 	@Parameter(names = {"-pc","--pathColor"}, required = false, description = "Colors the paths as described in a .json")
 	private String coloredPathsFile;
 	
@@ -63,6 +66,12 @@ public class DotTrimmerConfig {
 	
 	public String getOutput() {
 		return output;
+	}
+	
+	public String getEndGoalOutput() {
+		if (endGoalOutput.startsWith("'") && endGoalOutput.endsWith("'"))
+			return endGoalOutput.substring(1, endGoalOutput.length()-1);
+		return endGoalOutput;
 	}
 	
 	public List<String> getColoredStates() {

@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -54,18 +55,40 @@ public class DotTrimmer {
 		this.config = config;
 	}
 
-	public FastMealy<String, String> generateSimplifiedMachine(FastMealy<String, String> mealy) {
+	public FastMealy<String, String> trimUsingOtherConstruct(FastMealy<String, String> mealy) {
+		HashMap<FastMealyState<String>, FastMealyState<String>> stateMap = new HashMap<>();
 		Alphabet<String> alphabet = mealy.getInputAlphabet();
 		List<String> list = new ArrayList<>(alphabet);
 		list.add(mergeLabel);
-		FastMealy<String, String> trimmed = new FastMealy<String, String>(new ListAlphabet<>(list));
-		Map<FastMealyState<String>, FastMealyState<String>> stateMap = new HashMap<>();
-		for (FastMealyState<String> state : mealy.getStates()) {
-			FastMealyState<String> newState = trimmed.addState(null);
-			stateMap.put(state, newState);
-		}
+		FastMealy<String, String> trimmed = buildEmptyCopy(mealy, alphabet, stateMap);
 		constructSimplifiedMachine(mealy, trimmed, stateMap);
 		return trimmed;
+	}
+	
+	private FastMealy<String, String> buildEmptyCopy(FastMealy<String, String> mealy, Collection<String> inputs, Map<FastMealyState<String>, FastMealyState<String>> stateMap) {
+		List<String> list = new ArrayList<>(inputs);
+		FastMealy<String, String> emptyCopy = new FastMealy<String, String>(new ListAlphabet<>(list));
+		for (FastMealyState<String> state : mealy.getStates()) {
+			FastMealyState<String> newState = emptyCopy.addState(null);
+			stateMap.put(state, newState);
+		}
+		return emptyCopy;
+	}
+	
+	private FastMealy<String, String> buildFullCopy(FastMealy<String, String> mealy) {
+		HashMap<FastMealyState<String>, FastMealyState<String>> stateMap = new HashMap<>();
+		FastMealy<String, String> copy = buildEmptyCopy(mealy, mealy.getInputAlphabet(), stateMap);
+		copy.setInitialState(stateMap.get(mealy.getInitialState()));
+		for (FastMealyState<String> state : mealy.getStates()) {
+			FastMealyState<String> otherState = stateMap.get(state);
+			for (int i = 0; i < mealy.getInputAlphabet().size(); i++) {
+				MealyTransition<FastMealyState<String>, String> trans = state.getTransition(i);
+				MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
+							stateMap.get(trans.getSuccessor()), trans.getOutput());
+				otherState.setTransition(i, otherTrans);
+			}
+		}
+		return copy;
 	}
 
 	private void constructSimplifiedMachine(FastMealy<String, String> mealy, FastMealy<String, String> trimmed,
@@ -88,7 +111,7 @@ public class DotTrimmer {
 			}
 			for (int i = 0; i < inputSize; i++) {
 				MealyTransition<FastMealyState<String>, String> trans = state.getTransition(i);
-				if (!excludeTrans.contains(state.getTransition(i))) {
+				if (trans != null && !excludeTrans.contains(state.getTransition(i))) {
 					MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
 							stateMap.get(trans.getSuccessor()), trans.getOutput());
 					otherState.setTransition(i, otherTrans);
@@ -122,6 +145,9 @@ public class DotTrimmer {
 
 	private boolean promptsSameBehavior(FastMealy<String, String> a, FastMealyState<String> state, String symbol1,
 			String symbol2) {
+		// the the automaton is not specified for the symbols, return false
+		if (a.getTransition(state, symbol1) == null || a.getTransition(state, symbol2) == null)
+			return false;
 		return isCompatible(a.getTransition(state, symbol1), a.getTransition(state, symbol2));
 	}
 
@@ -153,9 +179,16 @@ public class DotTrimmer {
 		MealyDotParser<String, String> parser = new MealyDotParser<String, String>(
 				new ReplacingMealyProcessor(gen.getReplacer()));
 		FastMealy<String, String> mealy = parser.parseAutomaton(config.getModel()).get(0);
-
+		
+		FastMealy<String, String> trimmedMealy = mealy;
+		
+		if (config.getEndGoalOutput() != null) {
+			LOGGER.info("Simplifying the model using the EndGoal construct");
+			trimmedMealy = trimUsingEndGoalConstruct(trimmedMealy);
+		}
+		
 		LOGGER.info("Simplifying the model using the Other input construct");
-		FastMealy<String, String> trimmedMealy = generateSimplifiedMachine(mealy);
+		trimmedMealy = trimUsingOtherConstruct(trimmedMealy);
 		String trimmedModelFile = getOutputFile();
 
 		LOGGER.info("Applying coloring");
@@ -168,6 +201,20 @@ public class DotTrimmer {
 		LOGGER.info("Exporting the model to .dot");
 		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(trimmedModelFile), helper);
 		return new DotTrimmerResult(trimmedModelFile, trimmedMealy);
+	}
+
+	private FastMealy<String, String> trimUsingEndGoalConstruct(FastMealy<String, String> mealy) {
+		EndGoalProcessor endGoalProcessor = new EndGoalProcessor(config.getEndGoalOutput());
+		FastMealy<String, String> copy = buildFullCopy(mealy);
+		Set<FastMealyState<String>> statesToKeep = endGoalProcessor.getNecessaryStatesForEndgoal(copy, copy.getInputAlphabet());
+		for (FastMealyState<String> state : new ArrayList<>(copy.getStates())) {
+			if (!statesToKeep.contains(state)) {
+				copy.removeAllTransitions(state);
+				copy.removeState(state);
+			}
+		}
+		
+		return copy;
 	}
 
 	// generics bonanza

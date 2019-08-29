@@ -1,6 +1,11 @@
 {
 	rules:[
         {
+            replaceIf:".*"
+            function:"SNAKE_TO_CAMEL"
+        },
+        
+        {
 			replaceIf:"Alert.*",
 			replacee:"(Fatal\\,)|(Warning\\,)", 
 			replacement:""
