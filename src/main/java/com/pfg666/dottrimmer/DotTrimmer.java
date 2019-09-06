@@ -14,8 +14,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.alexmerz.graphviz.ParseException;
+import com.google.common.collect.Sets;
 import com.pfg666.dotparser.fsm.mealy.MealyDotParser;
 import com.pfg666.dottrimmer.paths.ColoredPath;
 import com.pfg666.dottrimmer.paths.ColoringDOTHelper;
@@ -38,20 +40,9 @@ import net.automatalib.words.impl.ListAlphabet;
 public class DotTrimmer {
 	private static Logger LOGGER = Logger.getGlobal();
 
-	// the minimum number of grouped inputs that can be merged
-	private int mergeThreshold;
-	// the label replacing merged inputs
-	private String mergeLabel;
 	private DotTrimmerConfig config;
 
-	public DotTrimmer(int mergeThreshold, String mergeLabel) {
-		this.mergeThreshold = mergeThreshold;
-		this.mergeLabel = mergeLabel;
-	}
-
 	public DotTrimmer(DotTrimmerConfig config) {
-		this.mergeLabel = config.getMergeLabel();
-		this.mergeThreshold = config.getMergeThreshold();
 		this.config = config;
 	}
 
@@ -59,8 +50,8 @@ public class DotTrimmer {
 		HashMap<FastMealyState<String>, FastMealyState<String>> stateMap = new HashMap<>();
 		Alphabet<String> alphabet = mealy.getInputAlphabet();
 		List<String> list = new ArrayList<>(alphabet);
-		list.add(mergeLabel);
-		FastMealy<String, String> trimmed = buildEmptyCopy(mealy, alphabet, stateMap);
+		list.add(config.getMergeLabel());
+		FastMealy<String, String> trimmed = buildEmptyCopy(mealy, new ListAlphabet<String>(list), stateMap);
 		constructSimplifiedMachine(mealy, trimmed, stateMap);
 		return trimmed;
 	}
@@ -100,13 +91,14 @@ public class DotTrimmer {
 			Set<MealyTransition<FastMealyState<String>, String>> excludeTrans = new HashSet<>();
 			List<Set<String>> symbolGrouping = generateSymbolGrouping(mealy, state);
 			int maxSize = symbolGrouping.stream().mapToInt(g -> g.size()).max().getAsInt();
-			if (maxSize > mergeThreshold) {
+			if (maxSize > config.getMergeThreshold()) {
 				Set<String> maxSet = symbolGrouping.stream().filter(g -> g.size() == maxSize).findFirst().get();
 				maxSet.stream().map(inp -> mealy.getTransition(state, inp)).forEach(tr -> excludeTrans.add(tr));
 				String input = maxSet.iterator().next();
 				MealyTransition<FastMealyState<String>, String> trans = mealy.getTransition(state, input);
 				MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
 						stateMap.get(trans.getSuccessor()), trans.getOutput());
+				otherState.ensureInputCapacity(inputSize+1);
 				otherState.setTransitionObject(inputSize, otherTrans);
 			}
 			for (int i = 0; i < inputSize; i++) {
@@ -187,9 +179,12 @@ public class DotTrimmer {
 			trimmedMealy = trimUsingEndGoalConstruct(trimmedMealy);
 		}
 		
-		LOGGER.info("Simplifying the model using the Other input construct");
-		trimmedMealy = trimUsingOtherConstruct(trimmedMealy);
-		String trimmedModelFile = getOutputFile();
+		if (config.getMergeThreshold() != null) {
+			LOGGER.info("Simplifying the model using the Other input construct");
+			trimmedMealy = trimUsingOtherConstruct(trimmedMealy);
+		}
+		
+		String outputFile = getOutputFile();
 
 		LOGGER.info("Applying coloring");
 		List<VisualizationHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>> helpers = generateHelpers(
@@ -198,8 +193,8 @@ public class DotTrimmer {
 		AggregateVisualizationHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> helper = new AggregateVisualizationHelper<>(helpers);
 
 		LOGGER.info("Exporting the model to .dot");
-		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(trimmedModelFile), helper);
-		return new DotTrimmerResult(trimmedModelFile, trimmedMealy);
+		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(outputFile), helper);
+		return new DotTrimmerResult(outputFile, trimmedMealy);
 	}
 
 	private FastMealy<String, String> trimUsingEndGoalConstruct(FastMealy<String, String> mealy) {
@@ -231,8 +226,6 @@ public class DotTrimmer {
 				Set<EdgeInfo<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>>> edges = collector
 						.getEdgesLeadingToState(trimmedMealy, inputs, state, config.getMaxLength(),
 								config.isWithoutLoops());
-				System.out.println("Returned edges: " + edges.size());
-				System.out.println(edges);
 				Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = edges
 						.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
 				helpers.add(
@@ -246,16 +239,21 @@ public class DotTrimmer {
 			ColoredPath[] paths = ColoredPath.loadColoredPaths(config.getColoredPathsFile());
 			for (ColoredPath path : paths) {
 				ParsedColoredPath<String> parsedColorPath = parseColorPath(path, replacer, trimmedMealy);
-				Set<FastMealyState<String>> states = stateSelector.selectStates(trimmedMealy, parsedColorPath);
-				
-				Set<EdgeInfo<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>>> edges = collector
-						.getEdgesForPath(trimmedMealy, inputs, parsedColorPath.getPathWord(), states);
-				if (!edges.isEmpty()) {
-					Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = edges
-							.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
-					helpers.add(
-							new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(
-									transitions, path.getColor()));
+				// are all the inputs contained in the alphabet
+				boolean isContained = Stream.concat(parsedColorPath.getPathWord().stream(), parsedColorPath.getPrefixWord().stream())
+						.allMatch(i -> inputs.contains(i));
+				if (isContained) {
+					Set<FastMealyState<String>> states = stateSelector.selectStates(trimmedMealy, parsedColorPath);
+					
+					Set<EdgeInfo<FastMealyState<String>, String, MealyTransition<FastMealyState<String>, String>>> edges = collector
+							.getEdgesForPath(trimmedMealy, inputs, parsedColorPath.getPathWord(), states);
+					if (!edges.isEmpty()) {
+						Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = edges
+								.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
+						helpers.add(
+								new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(
+										transitions, path.getColor()));
+					}
 				}
 			}
 		}
@@ -264,8 +262,14 @@ public class DotTrimmer {
 	}
 	
 	private ParsedColoredPath<String> parseColorPath(ColoredPath path, Replacer replacer, FastMealy<String, String> trimmedMealy) {
-		List<String> realPath = path.getPath().stream().collect(Collectors.toList());
-		List<String> realPrefix = path.getPrefix().stream().collect(Collectors.toList());
-		return new ParsedColoredPath<>(path, Word.fromList(realPrefix), Word.fromList(realPath));
+		if (!path.isReplaced()) {
+			List<String> realPath = path.getPath().stream().collect(Collectors.toList());
+			List<String> realPrefix = path.getPrefix().stream().collect(Collectors.toList());
+			return new ParsedColoredPath<>(path, Word.fromList(realPrefix), Word.fromList(realPath));
+		} else {
+			List<String> realPath = path.getPath().stream().map(i -> replacer.replace(i)).collect(Collectors.toList());
+			List<String> realPrefix = path.getPrefix().stream().map(i -> replacer.replace(i)).collect(Collectors.toList());
+			return new ParsedColoredPath<>(path.replace(replacer::replace), Word.fromList(realPrefix), Word.fromList(realPath));
+		}
 	}
 }

@@ -3,6 +3,9 @@ package com.pfg666.dottrimmer.paths;
 import java.io.FileReader;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 
@@ -31,6 +34,9 @@ public class ColoredPath {
 	private List<String> outputs;
 	private String anyOutput;
 	private boolean free = false;
+	// does it refer to the original inputs or to the replaced
+	private boolean replace = true;
+	
 	
 	public ColoredPath() {
 	}
@@ -77,7 +83,27 @@ public class ColoredPath {
 		return free;
 	}
 	
+	public boolean isReplaced() {
+		return replace;
+	}
+	
 	public String toString() {
 		return "[" + getPrefix().toString() + "] " + color + ":" + getPath().toString();
+	}
+	
+	public ColoredPath replace(Function<String,String> repl) {
+		ColoredPath copy = new ColoredPath(color, path.stream().map(repl).collect(Collectors.toList()));
+		if (prefix != null) {
+			copy.prefix = prefix.stream().map(repl).collect(Collectors.toList());
+		}
+		copy.replace = false;
+		copy.free = free;
+		if (outputs != null) {
+			copy.outputs = outputs.stream().map(repl).collect(Collectors.toList());
+		}
+		if (anyOutput != null) {
+			copy.anyOutput = repl.apply(anyOutput);
+		}
+		return copy;
 	}
 }

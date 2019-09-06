@@ -9,7 +9,7 @@ public class DotTrimmerConfig {
 	
 	@Parameter(names = {"-t","--thresh"}, required = false, 
 			description = "The minimum number of grouped inputs that can be merged. ")
-	private int mergeThreshold = Integer.MAX_VALUE;
+	private Integer mergeThreshold = null;
 	
 	@Parameter(names = {"-l","--label"}, required = false, 
 			description = "The label replacing merged inputs. ")
@@ -44,7 +44,7 @@ public class DotTrimmerConfig {
 	private String output = null;
 	
 	
-	public int getMergeThreshold() {
+	public Integer getMergeThreshold() {
 		return mergeThreshold;
 	}
 
@@ -69,7 +69,7 @@ public class DotTrimmerConfig {
 	}
 	
 	public String getEndGoalOutput() {
-		if (endGoalOutput.startsWith("'") && endGoalOutput.endsWith("'"))
+		if (endGoalOutput != null && endGoalOutput.startsWith("'") && endGoalOutput.endsWith("'"))
 			return endGoalOutput.substring(1, endGoalOutput.length()-1);
 		return endGoalOutput;
 	}
