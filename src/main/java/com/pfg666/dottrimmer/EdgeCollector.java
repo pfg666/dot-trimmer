@@ -101,15 +101,29 @@ public class EdgeCollector<S, I, T>  {
 			return Collections.emptySet();
 		} 
 		LinkedHashSet<EdgeInfo<S,I,T>> edges = new LinkedHashSet<>();
-		for (S cur : states) {
+		for (S state : states) {
+			boolean defined = true;
+			
+			S cur = state;
 			for (I input : path) {
 				S succ = automaton.getSuccessor(cur, input);
 				T trans = automaton.getTransition(cur, input);
 				if (succ == null || trans == null) {
-					return Collections.emptySet();
+					defined = false;
+					break;
 				}
-				edges.add(new EdgeInfo<>(succ, input, trans));
 				cur = succ;
+			}
+			
+			cur = state;
+			
+			if (defined) {
+				for (I input : path) {
+					S succ = automaton.getSuccessor(cur, input);
+					T trans = automaton.getTransition(cur, input);
+					edges.add(new EdgeInfo<>(succ, input, trans));
+					cur = succ;
+				}
 			}
 		}
 		return edges;

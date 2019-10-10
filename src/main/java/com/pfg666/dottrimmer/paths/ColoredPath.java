@@ -3,7 +3,6 @@ package com.pfg666.dottrimmer.paths;
 import java.io.FileReader;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -29,6 +28,7 @@ public class ColoredPath {
 	
 
 	private String color;
+	private String style;
 	private List<String> path;
 	private List<String> prefix;
 	private List<String> outputs;
@@ -51,10 +51,9 @@ public class ColoredPath {
 		this.path = inputs;
 		this.prefix = prefix;
 	}
-
-
-	public String getColor() {
-		return color;
+	
+	public EdgeProperties getEdgeProperties() {
+		return new EdgeProperties(color, style);
 	}
 
 	public List<String> getPath() {

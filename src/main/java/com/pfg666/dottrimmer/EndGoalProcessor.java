@@ -71,9 +71,11 @@ public class EndGoalProcessor {
 			S visitedState = toVisit.poll();
 			visited.add(visitedState);
 			Set<S> predStates = map.get(visitedState);
-			for (S predState : predStates) {
-				if (!visited.contains(predState)) {
-					toVisit.add(predState);
+			if (predStates != null) {
+				for (S predState : predStates) {
+					if (!visited.contains(predState)) {
+						toVisit.add(predState);
+					}
 				}
 			}
 		}

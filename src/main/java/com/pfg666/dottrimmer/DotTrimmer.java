@@ -17,10 +17,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.alexmerz.graphviz.ParseException;
-import com.google.common.collect.Sets;
 import com.pfg666.dotparser.fsm.mealy.MealyDotParser;
 import com.pfg666.dottrimmer.paths.ColoredPath;
 import com.pfg666.dottrimmer.paths.ColoringDOTHelper;
+import com.pfg666.dottrimmer.paths.EdgeProperties;
 import com.pfg666.dottrimmer.paths.ParsedColoredPath;
 import com.pfg666.dottrimmer.paths.StateSelector;
 import com.pfg666.dottrimmer.replacements.ReplacementGenerator;
@@ -228,9 +228,10 @@ public class DotTrimmer {
 								config.isWithoutLoops());
 				Set<TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>> transitions = edges
 						.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
+				EdgeProperties edgeProp = new EdgeProperties(color, null);
 				helpers.add(
 						new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(
-								transitions, color));
+								transitions, edgeProp));
 			}
 		}
 
@@ -252,7 +253,7 @@ public class DotTrimmer {
 								.stream().map(e -> e.asTransitionEdge()).collect(Collectors.toSet());
 						helpers.add(
 								new ColoringDOTHelper<FastMealyState<String>, TransitionEdge<String, MealyTransition<FastMealyState<String>, String>>>(
-										transitions, path.getColor()));
+										transitions, path.getEdgeProperties()));
 					}
 				}
 			}
