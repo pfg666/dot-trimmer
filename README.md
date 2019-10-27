@@ -19,12 +19,12 @@ The main use cases of dot-trimmer are:
 ## Remove Inputs
 dot-trimmer allows you to remove inputs from a given .dot file. After removal, dot-trimmer will minimize the model before exporting it to .dot. 
 ``` 
-java -jar dot-trimmer.jar --input aut.dot --removeInputs INP1,INP2,INP3"
+java -jar dot-trimmer.jar --input aut.dot --removeInputs "INP1,INP2,INP3"
 ```
 ## Merge Transitions
 dot-trimmer can merge transitions which have the same output and lead to the same state, replacing them by a single transition with a custom input and the common output. By default, dot-trimmer uses Other as the custom input, but the user can choose a different string. To enable merging transitions, the user needs the supply *thresh*, which is the minium number of transitions with same output for which merging can be performed. Example:
 ``` 
-java -jar dot-trimmer.jar --input aut.dot --thresh 3 --label DifferentOther"
+java -jar dot-trimmer.jar --input aut.dot --thresh 3 --label "DifferentOther"
 ```
 
 ## State Removal based on Output
