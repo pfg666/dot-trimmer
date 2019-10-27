@@ -11,18 +11,21 @@ import com.google.common.base.CaseFormat;
  * cannot be expressed by replacement rules.
  */
 public enum SpecialReplacementFunction {
-	SNAKE_TO_CAMEL(
-			SpecialReplacementFunction::snakeToCamel
+	UPPER_SNAKE_TO_UPPER_CAMEL(
+			SpecialReplacementFunction::upperSnakeToUpperCamel
 			),
 	
-	CAMEL_TO_SNAKE(
+	UPPER_CAMEL_TO_UPPER_SNAKE(
 			s -> {
 				return CaseFormat.UPPER_CAMEL
 						.to(CaseFormat.UPPER_UNDERSCORE, s);
 			}
+			),
+	UPPER_CAMEL_TO_LOWER_SNAKE(
+			SpecialReplacementFunction::upperCamelToLowerSnake
 			);
 	
-	private static Pattern SNAKE_PATTERN;
+	private static Pattern UPPER_SNAKE_PATTERN;
 	
 	private Function<String, String> replFunction;
 	
@@ -35,17 +38,17 @@ public enum SpecialReplacementFunction {
 	}
 	
 	
-	private static Pattern getSnakePattern() {
-		if (SNAKE_PATTERN == null)
-			SNAKE_PATTERN = Pattern.compile("([A-Z]+)_?");
-		return SNAKE_PATTERN;
+	private static Pattern getUpperSnakePattern() {
+		if (UPPER_SNAKE_PATTERN == null)
+			UPPER_SNAKE_PATTERN = Pattern.compile("([A-Z]+)_?");
+		return UPPER_SNAKE_PATTERN;
 	}
 	
 	/*
 	 * The Java equivalent of: sed -r 's/([A-Z])([A-Z]*)_*\/\\1\\L\\2\/g'
 	 */
-	private static String snakeToCamel(String s) {
-		Pattern pattern = getSnakePattern();
+	private static String upperSnakeToUpperCamel(String s) {
+		Pattern pattern = getUpperSnakePattern();
 		Matcher matcher = pattern.matcher(s);
 		StringBuffer sb = new StringBuffer();
 		while(matcher.find()) {
@@ -63,6 +66,15 @@ public enum SpecialReplacementFunction {
 		}
 		matcher.appendTail(sb);
 		String result = sb.toString();
+		return result;
+	}
+	
+	private static String upperCamelToLowerSnake(String s) {
+		String result = CaseFormat.UPPER_CAMEL
+				.to(CaseFormat.LOWER_UNDERSCORE, s);
+		if (result.startsWith("_")) {
+			result = result.substring(1);
+		}
 		return result;
 	}
  }

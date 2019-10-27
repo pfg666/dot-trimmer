@@ -1,5 +1,8 @@
 package com.pfg666.dottrimmer.replacements;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class ReplacementRule {
 	private String replaceIf;
 	private String replacee;
@@ -9,6 +12,7 @@ public class ReplacementRule {
 	
 	public ReplacementRule() {
 		isFinal = false;
+		replaceIf = ".*";
 	}
 
 	public ReplacementRule(String replaceIf, String replacee, String replacement, boolean isFinal) {
@@ -26,7 +30,20 @@ public class ReplacementRule {
 		if (function == null) {
 			return input.replaceAll(replacee, replacement);
 		} else {
-			return function.applyReplacementFunction(input);
+			if (replacee == null) {
+				return function.applyReplacementFunction(input);
+			} else {
+				Pattern p = Pattern.compile(replacee);
+				Matcher match = p.matcher(input);
+				StringBuffer buffer = new StringBuffer();
+				while(match.find()) {
+					String matchReplacement = function.applyReplacementFunction(match.group());
+					match.appendReplacement(buffer, matchReplacement);
+				}
+				match.appendTail(buffer);
+				return buffer.toString();
+			}
+			
 		}
 	}
 	

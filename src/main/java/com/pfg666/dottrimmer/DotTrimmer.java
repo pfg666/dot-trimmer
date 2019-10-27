@@ -31,6 +31,8 @@ import net.automatalib.automata.transducers.impl.FastMealy;
 import net.automatalib.automata.transducers.impl.FastMealyState;
 import net.automatalib.automata.transducers.impl.MealyTransition;
 import net.automatalib.serialization.dot.GraphDOT;
+import net.automatalib.util.automata.Automata;
+import net.automatalib.util.automata.copy.AutomatonCopyMethod;
 import net.automatalib.visualization.VisualizationHelper;
 import net.automatalib.visualization.helper.AggregateVisualizationHelper;
 import net.automatalib.words.Alphabet;
@@ -172,7 +174,13 @@ public class DotTrimmer {
 				new ReplacingMealyProcessor(gen.getReplacer()));
 		FastMealy<String, String> mealy = parser.parseAutomaton(config.getModel()).get(0);
 		
+		
 		FastMealy<String, String> trimmedMealy = mealy;
+		
+		if (config.getRemoveInputs() != null) {
+			LOGGER.info("Simplifying the model by removing inputs");
+			trimmedMealy = trimByRemovingInputs(trimmedMealy);
+		}
 		
 		if (config.getEndGoalOutput() != null) {
 			LOGGER.info("Simplifying the model using the EndGoal construct");
@@ -195,6 +203,19 @@ public class DotTrimmer {
 		LOGGER.info("Exporting the model to .dot");
 		GraphDOT.write(trimmedMealy, trimmedMealy.getInputAlphabet(), new FileWriter(outputFile), helper);
 		return new DotTrimmerResult(outputFile, trimmedMealy);
+	}
+
+	private FastMealy<String, String> trimByRemovingInputs(FastMealy<String, String> trimmedMealy) {
+		List<String> keptInputs = new LinkedList<>(trimmedMealy.getInputAlphabet());
+		keptInputs.removeAll( config.getRemoveInputs());
+		FastMealy<String, String> min = trimmedMealy; 
+		FastMealy<String, String> copy;
+		copy = new FastMealy<String, String>(new ListAlphabet<>(keptInputs));
+		net.automatalib.util.automata.copy.AutomatonLowLevelCopy.copy(AutomatonCopyMethod.DFS, trimmedMealy, keptInputs, copy);
+		min = new FastMealy<String, String>(new ListAlphabet<>(keptInputs));
+		min = Automata.minimize(copy, keptInputs, min);
+
+		return min;
 	}
 
 	private FastMealy<String, String> trimUsingEndGoalConstruct(FastMealy<String, String> mealy) {
