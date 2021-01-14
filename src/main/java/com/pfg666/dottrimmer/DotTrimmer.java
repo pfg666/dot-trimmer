@@ -76,9 +76,11 @@ public class DotTrimmer {
 			FastMealyState<String> otherState = stateMap.get(state);
 			for (int i = 0; i < mealy.getInputAlphabet().size(); i++) {
 				MealyTransition<FastMealyState<String>, String> trans = state.getTransitionObject(i);
-				MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
-							stateMap.get(trans.getSuccessor()), trans.getOutput());
-				otherState.setTransitionObject(i, otherTrans);
+				if (trans != null) {
+					MealyTransition<FastMealyState<String>, String> otherTrans = new MealyTransition<FastMealyState<String>, String>(
+								stateMap.get(trans.getSuccessor()), trans.getOutput());
+					otherState.setTransitionObject(i, otherTrans);
+				}
 			}
 		}
 		return copy;
@@ -182,14 +184,20 @@ public class DotTrimmer {
 			trimmedMealy = trimByRemovingInputs(trimmedMealy);
 		}
 		
+		if (config.getMergeThreshold() != null) {
+			LOGGER.info("Simplifying the model using the Other input construct");
+			trimmedMealy = trimUsingOtherConstruct(trimmedMealy);
+		}
+		
 		if (config.getEndGoalOutput() != null) {
 			LOGGER.info("Simplifying the model using the EndGoal construct");
 			trimmedMealy = trimUsingEndGoalConstruct(trimmedMealy);
 		}
 		
-		if (config.getMergeThreshold() != null) {
-			LOGGER.info("Simplifying the model using the Other input construct");
-			trimmedMealy = trimUsingOtherConstruct(trimmedMealy);
+		if (config.getMergeThreshold() != null && config.getEndGoalOutput() != null) {
+			LOGGER.warning("Combining other merging with state prunning may lead to ambiguous other output.");
+			LOGGER.warning("To determine the other output, inspect a non-merged state-pruned version of the model.");
+			
 		}
 		
 		String outputFile = getOutputFile();

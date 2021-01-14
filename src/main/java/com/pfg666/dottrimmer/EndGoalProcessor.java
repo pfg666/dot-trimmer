@@ -29,9 +29,11 @@ public class EndGoalProcessor {
 		List<S> endGoalStates = new LinkedList<>();
 		for (S state : automaton.getStates()) {
 			for (I input : inputs) {
-				if (automaton.getOutput(state, input).toString().matches(outputRegex)) {
-					endGoalStates.add(state);
-					statesFromEndGoal.add(automaton.getSuccessor(state, input));
+				if (automaton.getOutput(state, input) != null) {
+					if (automaton.getOutput(state, input).toString().matches(outputRegex)) {
+						endGoalStates.add(state);
+						statesFromEndGoal.add(automaton.getSuccessor(state, input));
+					}
 				}
 			}
 		}
